@@ -2,6 +2,7 @@ import { useState, useEffect, ReactNode } from "react"
 import { AgentMessage, Invocation, Receipt, Capability, Proof, Delegation as DelegationType} from "@ucanto/interface"
 import { isDelegation} from '@ucanto/core'
 import { Request, isChromeRequest } from './types'
+import * as dagJson from '@ipld/dag-json'
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
@@ -49,7 +50,21 @@ function CapabilityDisplay({ capability } : { capability: Capability }) {
   const index : Record<string, React.ReactNode> = Object.assign({
     Can: capability.can,
     With: shortString(capability.with, 60)
-  }, capability.nb ? { NB: JSON.stringify(capability.nb, bigIntSafe, 4) } : {})
+  }, 
+  capability.nb ? { NB: JSON.stringify(capability.nb, bigIntSafe, 4) } : {})
+
+  const withObj = capability.with as any
+  if (withObj && typeof withObj === 'object' && 'fact' in withObj) {
+    try {
+      const factValue = dagJson.decode(dagJson.encode(withObj.fact))
+      Object.assign(index, {
+        Fact: <pre style={{ margin: 0 }}>{JSON.stringify(factValue, bigIntSafe, 2)}</pre>
+      })
+    } catch (err) {
+      console.warn('Failed to encode/decode fact field:', err)
+    }
+  }
+
   return (
     <TableDisplay size="small" index={index} />
   )
