@@ -32,10 +32,25 @@ function TableDisplay({ size,  index , children} : React.PropsWithChildren<{size
         <TableBody>
           {
             Object.entries(index).map(([heading, value]) => {
-              return <TableRow>
-                <TableCell></TableCell>
-                <TableCell>{heading}</TableCell>
-                <TableCell>{value}</TableCell>
+              return <TableRow key={heading}>
+                <TableCell sx={{
+                  width: '120px',
+                  minWidth: '120px',
+                  fontWeight: 500,
+                }}>{heading}</TableCell>
+                <TableCell sx={{
+                  maxWidth: 0,
+                  width: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  '& pre': {
+                    margin: 0,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-all',
+                  },
+                }}>{value}</TableCell>
+                <TableCell sx={{ width: '48px', minWidth: '48px' }}></TableCell>
               </TableRow>
             })
           }
@@ -111,6 +126,11 @@ function InvocationDisplay({invocation} : { invocation : Invocation }) {
         expandIcon={<ExpandMoreIcon />}
         aria-controls="panel1-content"
         id="panel1-header"
+        sx={{
+          '& .MuiAccordionSummary-expandIconWrapper': {
+            marginLeft: 'auto',
+          },
+        }}
       >
         { invocation.cid.toString() }
       </AccordionSummary>
@@ -129,7 +149,19 @@ function CollapsableRow({ header, children} : React.PropsWithChildren<{header:st
   return (
     <Fragment>
       <TableRow>
-        <TableCell>
+        <TableCell sx={{
+          width: '120px',
+          minWidth: '120px',
+          fontWeight: 500,
+        }}>{header}</TableCell>
+        <TableCell sx={{
+          maxWidth: 0,
+          width: '100%',
+        }}></TableCell>
+        <TableCell sx={{
+          width: '48px',
+          minWidth: '48px',
+        }}>
           <IconButton
           aria-label="expand row"
           size="small"
@@ -138,12 +170,11 @@ function CollapsableRow({ header, children} : React.PropsWithChildren<{header:st
           {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell colSpan={2}>{header}</TableCell>
       </TableRow>
       <TableRow>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={3}>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <Box>
+            <Box sx={{ py: 1 }}>
               {children}
             </Box>
           </Collapse>
@@ -162,6 +193,11 @@ function ReceiptDisplay({receipt} : { receipt : Receipt }) {
         expandIcon={<ExpandMoreIcon />}
         aria-controls="panel1-content"
         id="panel1-header"
+        sx={{
+          '& .MuiAccordionSummary-expandIconWrapper': {
+            marginLeft: 'auto',
+          },
+        }}
       >
         { receipt.link().toString() }
       </AccordionSummary>
@@ -174,9 +210,9 @@ function ReceiptDisplay({receipt} : { receipt : Receipt }) {
             </CollapsableRow>
           :
             <TableRow>
-              <TableCell></TableCell>
               <TableCell>Ran</TableCell>
               <TableCell>{receipt.ran.toString()}</TableCell>
+              <TableCell></TableCell>
             </TableRow>
           }
         </TableDisplay>
@@ -189,17 +225,33 @@ function ReceiptDisplay({receipt} : { receipt : Receipt }) {
 function MessageDisplay({message} : { message : AgentMessage}) {
   const invocations = message.invocations.map(invocation => <InvocationDisplay invocation={invocation} />)
   const receipts = Array.from(message.receipts.values()).map(receipt => <ReceiptDisplay receipt={receipt} />)
-  return <Box>
+  return <Box sx={{ '& .MuiCard-root': { mb: 2 } }}>
     { invocations.length > 0 && <Card>
-      <CardHeader title="Invocations"></CardHeader>
-      <CardContent>
+      <CardHeader 
+        title="Invocations"
+        sx={{
+          py: 1,
+          '& .MuiCardHeader-title': {
+            fontSize: '1rem',
+          },
+        }}
+      />
+      <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
         { invocations }
       </CardContent>
     </Card> }
     { receipts.length > 0 &&
     <Card>
-      <CardHeader title="Receipts"></CardHeader>
-      <CardContent>
+      <CardHeader 
+        title="Receipts"
+        sx={{
+          py: 1,
+          '& .MuiCardHeader-title': {
+            fontSize: '1rem',
+          },
+        }}
+      />
+      <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
         { receipts }
       </CardContent>
     </Card> }

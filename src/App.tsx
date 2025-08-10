@@ -4,6 +4,10 @@ import { Request } from './types'
 import RequestList from "./RequestList"
 import RequestInspector from "./RequestInspector";
 import Box from '@mui/material/Box'
+import IconButton from '@mui/material/IconButton';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import { useTheme } from './ThemeContext';
 
 type SetAction = {
   action: "set",
@@ -27,7 +31,7 @@ function reducer(requests : Request[], action: Action) {
 }
 
 function App() {
-
+  const { isDarkMode, toggleTheme } = useTheme();
   const [requests, dispatch] = useReducer(reducer, [])
   const [selectedRequest, selectRequest] = useState<Request | null>(null)
   useEffect(() => {
@@ -52,9 +56,25 @@ function App() {
   })
 
   return (
+    <Box sx={{
+      display: 'flex',
+      height: '100vh',
+      flexDirection: 'column'
+    }}>
       <Box sx={{
         display: 'flex',
-        height: '100vh',
+        justifyContent: 'flex-end',
+        p: 1,
+        borderBottom: 1,
+        borderColor: 'divider'
+      }}>
+        <IconButton onClick={toggleTheme} color="inherit">
+          {isDarkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+        </IconButton>
+      </Box>
+      <Box sx={{
+        display: 'flex',
+        flex: 1,
         flexDirection: {
           xs: 'column',
           md: 'row'
@@ -73,16 +93,15 @@ function App() {
         }}>
           <RequestList requests={requests} selectedRequest={selectedRequest} selectRequest={selectRequest}/>
         </Box>
-        {
-          selectedRequest ?
+        {selectedRequest ? (
           <Box sx={{
             flex: "1 1 50%",
           }}>
-            
-              <RequestInspector request={selectedRequest}/>
-          </Box>  : ''
-        }
+            <RequestInspector request={selectedRequest}/>
+          </Box>
+        ) : null}
       </Box>
+    </Box>
   );
 }
 

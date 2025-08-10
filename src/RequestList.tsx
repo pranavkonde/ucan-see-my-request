@@ -11,8 +11,22 @@ function RequestEntry({ request, selectedRequest, selectRequest } : {request: Re
   const message = messageFromRequest(request)
   return (
     <TableRow onClick={() => selectRequest(request)} hover selected={request === selectedRequest}>
-      <TableCell>{request.request.url}</TableCell>
-      <TableCell>{ typeof message === 'string' ? message : message.invocations.flatMap((invocation) => invocation.capabilities.map((capability => capability.can))).join(", ")}</TableCell>
+      <TableCell sx={{
+        maxWidth: '300px',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}>
+        {request.request.url}
+      </TableCell>
+      <TableCell sx={{
+        maxWidth: '300px',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}>
+        { typeof message === 'string' ? message : message.invocations.flatMap((invocation) => invocation.capabilities.map((capability => capability.can))).join(", ")}
+      </TableCell>
     </TableRow>
   )
 }
@@ -24,11 +38,19 @@ function RequestList({ requests, selectedRequest, selectRequest} : { requests: R
     <Table
       stickyHeader
       aria-labelledby="tableTitle"
-      size={'medium'}
+      size="small"
+      sx={{
+        '& .MuiTableCell-root': {
+          py: 1,
+          px: 2,
+        },
+      }}
     >
       <TableHead>
-        <TableCell>URL</TableCell>
-        <TableCell>Capabilities</TableCell>
+        <TableRow>
+          <TableCell>URL</TableCell>
+          <TableCell>Capabilities</TableCell>
+        </TableRow>
       </TableHead>
       <TableBody>
       { requestItems }
