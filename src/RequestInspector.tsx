@@ -8,7 +8,7 @@ import Box from '@mui/material/Box';
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader';
 import CardContent from '@mui/material/CardContent';
-import {shortString, bigIntSafe, messageFromRequest, decodeMessage, formatError} from './util'
+import {shortString, bigIntSafe, messageFromRequest, decodeMessage, formatError, getRequestStatus, getStatusColor} from './util'
 import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
@@ -28,6 +28,8 @@ import Tooltip from '@mui/material/Tooltip';
 
 import { Fragment } from 'react'
 import { Delegation } from "@ucanto/core/delegation";
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
+ 
 function TableDisplay({ size,  index , children} : React.PropsWithChildren<{size? : "small" | "medium", index : Record<string, React.ReactNode> }>) {
   return (
       <Table size={size}>
@@ -249,7 +251,6 @@ function ResponseDisplay({request} : { request: Request}) {
   return <ResponseBodyDisplay body={body} />
 }
 
-
 function a11yProps(index: number) {
   return {
     id: `simple-tab-${index}`,
@@ -281,6 +282,7 @@ function CustomTabPanel(props: TabPanelProps) {
 
 function RequestInspector({request, onClose} : {request: Request, onClose: () => void}) {
   const [tabIndex, setTabIndex] = useState(0)
+  const status = getRequestStatus(request);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabIndex(newValue);
@@ -289,7 +291,14 @@ function RequestInspector({request, onClose} : {request: Request, onClose: () =>
   return (
     <Paper sx={{ height: "100%", overflowY: "scroll" }} elevation={3}>
     <Box sx={{ width: '100%' }}>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center' }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', p: 1 }}>
+        <FiberManualRecordIcon 
+          sx={{ 
+            color: getStatusColor(status), 
+            fontSize: 16, 
+            mr: 1 
+          }} 
+        />
         <Tooltip title="Close panel">
           <IconButton onClick={onClose}>
             <CloseIcon />

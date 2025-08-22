@@ -45,6 +45,45 @@ export function formatError(error: any): string {
   }
 }
 
+export function getRequestStatus(request: Request): string {
+  const httpStatus = request.response.status
+  const isHttpSuccess = httpStatus >= 200 && httpStatus < 300
+  const isHttpError = httpStatus >= 400
+
+  const message = messageFromRequest(request)
+  let hasReceiptError = false
+
+  if (typeof message !== 'string' && message.receipts.size > 0) {
+    for (const receipt of message.receipts.values()) {
+      if (receipt.out.error !== undefined) {
+        hasReceiptError = true
+        break
+      }
+    }
+  }
+
+  if (isHttpError || hasReceiptError) {
+    return 'error'
+  } else if (isHttpSuccess && !hasReceiptError) {
+    return 'success'
+  } else {
+    return 'pending'
+  }
+}
+
+export function getStatusColor(status: string): string {
+  switch (status) {
+    case 'success':
+      return '#4caf50'
+    case 'error':
+      return '#f44336'
+    case 'pending':
+      return '#ff9800'
+    default:
+      return '#9e9e9e'
+  }
+}
+
 export function getRequestTiming(request: Request): number | null {
   if (isChromeRequest(request)) {
     // For Chrome DevTools network requests, use the time property which represents total duration
@@ -88,4 +127,5 @@ export function formatTiming(timeMs: number | null): string {
   const remainingMinutes = minutes % 60;
   
   return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+}
 }

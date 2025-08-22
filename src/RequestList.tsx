@@ -8,16 +8,29 @@ import TableRow from '@mui/material/TableRow';
 import Box from '@mui/material/Box';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import { isCarRequest, messageFromRequest, getRequestTiming, formatTiming } from "./util";
+import { isCarRequest, messageFromRequest, getRequestStatus, getStatusColor, getRequestTiming, formatTiming } from "./util";
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 
 function RequestEntry({ request, selectedRequest, selectRequest } : {request: Request, selectedRequest: Request | null, selectRequest: (request: Request) => void}) {
   const message = messageFromRequest(request)
+  const status = getRequestStatus(request);
   const timing = getRequestTiming(request)
   const formattedTiming = formatTiming(timing)
   
   return (
     <TableRow onClick={() => selectRequest(request)} hover selected={request === selectedRequest}>
-      <TableCell>{request.request.url}</TableCell>
+      <TableCell>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <FiberManualRecordIcon 
+            sx={{ 
+              color: getStatusColor(status), 
+              fontSize: 16,
+              mr: 1
+            }} 
+          />
+          {request.request.url}
+        </Box>
+      </TableCell>
       <TableCell>{ typeof message === 'string' ? message : message.invocations.flatMap((invocation) => invocation.capabilities.map((capability => capability.can))).join(", ")}</TableCell>
       <TableCell>{formattedTiming}</TableCell>
     </TableRow>
