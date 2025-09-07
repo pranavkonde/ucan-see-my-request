@@ -8,7 +8,7 @@ import Box from '@mui/material/Box';
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader';
 import CardContent from '@mui/material/CardContent';
-import {shortString, bigIntSafe, messageFromRequest, decodeMessage, formatError} from './util'
+import {shortString, bigIntSafe, messageFromRequest, decodeMessage, formatError, getRequestStatus, getStatusColor} from './util'
 import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
@@ -23,9 +23,15 @@ import IconButton from '@mui/material/IconButton';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Paper from '@mui/material/Paper'
+import CloseIcon from '@mui/icons-material/Close';
+import Tooltip from '@mui/material/Tooltip';
+import Button from '@mui/material/Button';
+import DownloadIcon from '@mui/icons-material/Download';
 
 import { Fragment } from 'react'
 import { Delegation } from "@ucanto/core/delegation";
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
+ 
 function TableDisplay({ size,  index , children} : React.PropsWithChildren<{size? : "small" | "medium", index : Record<string, React.ReactNode> }>) {
   return (
       <Table size={size}>
@@ -79,6 +85,7 @@ function ProofDisplay({ proof } : { proof: Proof }) {
     const capabilities = proof.capabilities.map(capability => <CapabilityDisplay capability={capability} />)
     const proofs = proof.proofs.map((proof) => <ProofDisplay proof={proof}/>)
     const index: Record<string, ReactNode> = {
+      'Root CID': <ShortenAndScroll>{proof.cid.toString()}</ShortenAndScroll>,
       Issuer: <ShortenAndScroll>{proof.issuer.did()}</ShortenAndScroll>,
       Audience: <ShortenAndScroll>{proof.audience.did()}</ShortenAndScroll>,
       Expiration: proof.expiration.toString(),
@@ -94,9 +101,10 @@ function ProofDisplay({ proof } : { proof: Proof }) {
       </TableDisplay>
     )
   } else {
-    return (
-      <pre>{JSON.stringify(proof, null, 2)}</pre>
-    )
+    const index: Record<string, ReactNode> = {
+      'Root CID': <ShortenAndScroll>{proof.toString()}</ShortenAndScroll>,
+    }
+    return <TableDisplay size="small" index={index} />
   }
 }
 
@@ -119,9 +127,9 @@ function InvocationTable({invocation} : { invocation : Invocation }) {
   )
 }
 
-function InvocationDisplay({invocation} : { invocation : Invocation }) {
+function InvocationDisplay({invocation, expanded = false} : { invocation : Invocation, expanded : boolean }) {
   return (
-    <Accordion>
+    <Accordion defaultExpanded={expanded}>
       <AccordionSummary
         expandIcon={<ExpandMoreIcon />}
         aria-controls="panel1-content"
@@ -183,12 +191,13 @@ function CollapsableRow({ header, children} : React.PropsWithChildren<{header:st
     </Fragment>
   )
 }
-function ReceiptDisplay({receipt} : { receipt : Receipt }) {
+
+function ReceiptDisplay({receipt, expanded = false} : { receipt : Receipt, expanded : boolean }) {
   const index = {
     Out: receipt.out.ok ? <pre>{JSON.stringify(receipt.out.ok, bigIntSafe, 2)}</pre> : `Error: ${formatError(receipt.out.error)}`,
   }
   return (
-    <Accordion>
+    <Accordion defaultExpanded={expanded}>
       <AccordionSummary
         expandIcon={<ExpandMoreIcon />}
         aria-controls="panel1-content"
@@ -222,9 +231,69 @@ function ReceiptDisplay({receipt} : { receipt : Receipt }) {
   )
 }
 
-function MessageDisplay({message} : { message : AgentMessage}) {
-  const invocations = message.invocations.map(invocation => <InvocationDisplay invocation={invocation} />)
-  const receipts = Array.from(message.receipts.values()).map(receipt => <ReceiptDisplay receipt={receipt} />)
+function MessageDisplay({message, request, type} : { message : AgentMessage, request: Request, type: 'request' | 'response'}) {
+  const invocations = message.invocations.map((invocation, i) => (
+    <InvocationDisplay 
+      invocation={invocation}
+      expanded={i === 0}
+      key={invocation.cid.toString()}
+    />
+  ))
+
+  const receipts = Array.from(message.receipts.values()).map((receipt, i) => (
+    <ReceiptDisplay 
+      receipt={receipt}
+      expanded={i === 0}
+      key={receipt.link().toString()}
+    />
+  ))
+  
+  const handleSave = async () => {
+    if (isChromeRequest(request)) {
+      if (type === 'request') {
+        // For request, we need to get the request body
+        const anyReq: any = request as any
+        const postData = anyReq?.request?.postData
+        if (postData?.text) {
+          let content = postData.text
+          if (postData.encoding === 'base64') {
+            content = atob(postData.text)
+          }
+          const bytes = new Uint8Array(content.split('').map((char: string) => char.charCodeAt(0)))
+          const blob = new Blob([bytes], { type: 'application/vnd.ipld.car' })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `request-${Date.now()}.car`
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+        }
+      } else {
+        // For response, get the response body
+        request.getContent((content, encoding) => {
+          if (content) {
+            let decoded = content
+            if (encoding === 'base64') {
+              decoded = atob(content)
+            }
+            const bytes = new Uint8Array(decoded.split('').map((char: string) => char.charCodeAt(0)))
+            const blob = new Blob([bytes], { type: 'application/vnd.ipld.car' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `response-${Date.now()}.car`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+          }
+        })
+      }
+    }
+  }
+
   return <Box sx={{ '& .MuiCard-root': { mb: 2 } }}>
     { invocations.length > 0 && <Card>
       <CardHeader 
@@ -255,28 +324,32 @@ function MessageDisplay({message} : { message : AgentMessage}) {
         { receipts }
       </CardContent>
     </Card> }
+    <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleSave}
+        startIcon={<DownloadIcon />}
+        size="large"
+      >
+        SAVE {type.toUpperCase()} CAR
+      </Button>
+    </Box>
   </Box>
 }
 
 function RequestDisplay({request} : { request: Request}) {
   const message = messageFromRequest(request)
-  return <div>{typeof message == 'string' ? message : <MessageDisplay message={message}/>}</div>
+  return <div>{typeof message == 'string' ? message : <MessageDisplay message={message} request={request} type="request"/>}</div>
 }
 
-function ResponseBodyDisplay({ body } : {body : string}) {
+function ResponseBodyDisplay({ body, request } : {body : string, request: Request}) {
   const message = decodeMessage(body)
-  return <div>{typeof message == 'string' ? message : <MessageDisplay message={message}/>}</div>
+  return <div>{typeof message == 'string' ? message : <MessageDisplay message={message} request={request} type="response"/>}</div>
 }
 
 function ResponseDisplay({request} : { request: Request}) {
   const [body, setBody] = useState("")
-  if (request.response.content.text) {
-    let decoded = request.response.content.text
-    if (request.response.content.encoding == 'base64') {
-      decoded = atob(request.response.content.text)
-    }
-    setBody(decoded)
-  }
   useEffect(() => {
     let ignore = false
     if (isChromeRequest(request)) {
@@ -289,14 +362,20 @@ function ResponseDisplay({request} : { request: Request}) {
           setBody(decoded)
         }
       })
+    } else if (request.response.content.text) {
+      let decoded = request.response.content.text
+      if (request.response.content.encoding == 'base64') {
+        decoded = atob(request.response.content.text)
+      }
+      setBody(decoded)
     }
     return () => {
       ignore = true
     }
   }, [request])
-  return <ResponseBodyDisplay body={body} />
-}
 
+  return <ResponseBodyDisplay body={body} request={request} />
+}
 
 function a11yProps(index: number) {
   return {
@@ -327,8 +406,9 @@ function CustomTabPanel(props: TabPanelProps) {
   );
 }
 
-function RequestInspector({request} : {request: Request}) {
+function RequestInspector({request, onClose} : {request: Request, onClose: () => void}) {
   const [tabIndex, setTabIndex] = useState(0)
+  const status = getRequestStatus(request);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabIndex(newValue);
@@ -337,7 +417,19 @@ function RequestInspector({request} : {request: Request}) {
   return (
     <Paper sx={{ height: "100%", overflowY: "scroll" }} elevation={3}>
     <Box sx={{ width: '100%' }}>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', p: 1 }}>
+        <FiberManualRecordIcon 
+          sx={{ 
+            color: getStatusColor(status), 
+            fontSize: 16, 
+            mr: 1 
+          }} 
+        />
+        <Tooltip title="Close panel">
+          <IconButton onClick={onClose}>
+            <CloseIcon />
+          </IconButton>
+        </Tooltip>
         <Tabs value={tabIndex} onChange={handleChange} aria-label="basic tabs example">
           <Tab label="Request" {...a11yProps(0)} />
           <Tab label="Response" {...a11yProps(1)} />
@@ -347,8 +439,7 @@ function RequestInspector({request} : {request: Request}) {
         <RequestDisplay request={request}/> 
       </CustomTabPanel> 
       <CustomTabPanel value={tabIndex} index={1}>
-
-      <ResponseDisplay request={request} />
+        <ResponseDisplay request={request} />
       </CustomTabPanel>
     </Box>
     </Paper>
