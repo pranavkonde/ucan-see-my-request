@@ -82,6 +82,7 @@ function ProofDisplay({ proof } : { proof: Proof }) {
       Issuer: <ShortenAndScroll>{proof.issuer.did()}</ShortenAndScroll>,
       Audience: <ShortenAndScroll>{proof.audience.did()}</ShortenAndScroll>,
       Expiration: proof.expiration.toString(),
+      ...(proof.facts && { Facts: <pre>{JSON.stringify(proof.facts, null, 2)}</pre> })
     }
     return (
       <TableDisplay size="small" index={index}>
