@@ -38,10 +38,25 @@ function TableDisplay({ size,  index , children} : React.PropsWithChildren<{size
         <TableBody>
           {
             Object.entries(index).map(([heading, value]) => {
-              return <TableRow>
-                <TableCell></TableCell>
-                <TableCell>{heading}</TableCell>
-                <TableCell>{value}</TableCell>
+              return <TableRow key={heading}>
+                <TableCell sx={{
+                  width: '120px',
+                  minWidth: '120px',
+                  fontWeight: 500,
+                }}>{heading}</TableCell>
+                <TableCell sx={{
+                  maxWidth: 0,
+                  width: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  '& pre': {
+                    margin: 0,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-all',
+                  },
+                }}>{value}</TableCell>
+                <TableCell sx={{ width: '48px', minWidth: '48px' }}></TableCell>
               </TableRow>
             })
           }
@@ -119,6 +134,11 @@ function InvocationDisplay({invocation, expanded = false} : { invocation : Invoc
         expandIcon={<ExpandMoreIcon />}
         aria-controls="panel1-content"
         id="panel1-header"
+        sx={{
+          '& .MuiAccordionSummary-expandIconWrapper': {
+            marginLeft: 'auto',
+          },
+        }}
       >
         { invocation.cid.toString() }
       </AccordionSummary>
@@ -137,7 +157,19 @@ function CollapsableRow({ header, children} : React.PropsWithChildren<{header:st
   return (
     <Fragment>
       <TableRow>
-        <TableCell>
+        <TableCell sx={{
+          width: '120px',
+          minWidth: '120px',
+          fontWeight: 500,
+        }}>{header}</TableCell>
+        <TableCell sx={{
+          maxWidth: 0,
+          width: '100%',
+        }}></TableCell>
+        <TableCell sx={{
+          width: '48px',
+          minWidth: '48px',
+        }}>
           <IconButton
           aria-label="expand row"
           size="small"
@@ -146,12 +178,11 @@ function CollapsableRow({ header, children} : React.PropsWithChildren<{header:st
           {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell colSpan={2}>{header}</TableCell>
       </TableRow>
       <TableRow>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={3}>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <Box>
+            <Box sx={{ py: 1 }}>
               {children}
             </Box>
           </Collapse>
@@ -160,6 +191,7 @@ function CollapsableRow({ header, children} : React.PropsWithChildren<{header:st
     </Fragment>
   )
 }
+
 function ReceiptDisplay({receipt, expanded = false} : { receipt : Receipt, expanded : boolean }) {
   const index = {
     Out: receipt.out.ok ? <pre>{JSON.stringify(receipt.out.ok, bigIntSafe, 2)}</pre> : `Error: ${formatError(receipt.out.error)}`,
@@ -170,6 +202,11 @@ function ReceiptDisplay({receipt, expanded = false} : { receipt : Receipt, expan
         expandIcon={<ExpandMoreIcon />}
         aria-controls="panel1-content"
         id="panel1-header"
+        sx={{
+          '& .MuiAccordionSummary-expandIconWrapper': {
+            marginLeft: 'auto',
+          },
+        }}
       >
         { receipt.link().toString() }
       </AccordionSummary>
@@ -182,9 +219,9 @@ function ReceiptDisplay({receipt, expanded = false} : { receipt : Receipt, expan
             </CollapsableRow>
           :
             <TableRow>
-              <TableCell></TableCell>
               <TableCell>Ran</TableCell>
               <TableCell>{receipt.ran.toString()}</TableCell>
+              <TableCell></TableCell>
             </TableRow>
           }
         </TableDisplay>
@@ -257,17 +294,33 @@ function MessageDisplay({message, request, type} : { message : AgentMessage, req
     }
   }
 
-  return <Box>
+  return <Box sx={{ '& .MuiCard-root': { mb: 2 } }}>
     { invocations.length > 0 && <Card>
-      <CardHeader title="Invocations"></CardHeader>
-      <CardContent>
+      <CardHeader 
+        title="Invocations"
+        sx={{
+          py: 1,
+          '& .MuiCardHeader-title': {
+            fontSize: '1rem',
+          },
+        }}
+      />
+      <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
         { invocations }
       </CardContent>
     </Card> }
     { receipts.length > 0 &&
     <Card>
-      <CardHeader title="Receipts"></CardHeader>
-      <CardContent>
+      <CardHeader 
+        title="Receipts"
+        sx={{
+          py: 1,
+          '& .MuiCardHeader-title': {
+            fontSize: '1rem',
+          },
+        }}
+      />
+      <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
         { receipts }
       </CardContent>
     </Card> }
@@ -297,13 +350,6 @@ function ResponseBodyDisplay({ body, request } : {body : string, request: Reques
 
 function ResponseDisplay({request} : { request: Request}) {
   const [body, setBody] = useState("")
-  if (request.response.content.text) {
-    let decoded = request.response.content.text
-    if (request.response.content.encoding == 'base64') {
-      decoded = atob(request.response.content.text)
-    }
-    setBody(decoded)
-  }
   useEffect(() => {
     let ignore = false
     if (isChromeRequest(request)) {
@@ -316,6 +362,12 @@ function ResponseDisplay({request} : { request: Request}) {
           setBody(decoded)
         }
       })
+    } else if (request.response.content.text) {
+      let decoded = request.response.content.text
+      if (request.response.content.encoding == 'base64') {
+        decoded = atob(request.response.content.text)
+      }
+      setBody(decoded)
     }
     return () => {
       ignore = true
@@ -387,8 +439,7 @@ function RequestInspector({request, onClose} : {request: Request, onClose: () =>
         <RequestDisplay request={request}/> 
       </CustomTabPanel> 
       <CustomTabPanel value={tabIndex} index={1}>
-
-      <ResponseDisplay request={request} />
+        <ResponseDisplay request={request} />
       </CustomTabPanel>
     </Box>
     </Paper>

@@ -20,7 +20,12 @@ function RequestEntry({ request, selectedRequest, selectRequest } : {request: Re
   
   return (
     <TableRow onClick={() => selectRequest(request)} hover selected={request === selectedRequest}>
-      <TableCell>
+      <TableCell sx={{
+        maxWidth: '300px',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <FiberManualRecordIcon 
             sx={{ 
@@ -32,7 +37,14 @@ function RequestEntry({ request, selectedRequest, selectRequest } : {request: Re
           {request.request.url}
         </Box>
       </TableCell>
-      <TableCell>{ typeof message === 'string' ? message : message.invocations.flatMap((invocation) => invocation.capabilities.map((capability => capability.can))).join(", ")}</TableCell>
+      <TableCell sx={{
+        maxWidth: '300px',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}>
+        { typeof message === 'string' ? message : message.invocations.flatMap((invocation) => invocation.capabilities.map((capability => capability.can))).join(", ")}
+      </TableCell>
       <TableCell>{formattedTiming}</TableCell>
     </TableRow>
   )
@@ -57,12 +69,20 @@ function RequestList({ requests, selectedRequest, selectRequest } : { requests: 
     <Table
       stickyHeader
       aria-labelledby="tableTitle"
-      size={'medium'}
+      size="small"
+      sx={{
+        '& .MuiTableCell-root': {
+          py: 1,
+          px: 2,
+        },
+      }}
     >
       <TableHead>
-        <TableCell>URL</TableCell>
-        <TableCell>Capabilities</TableCell>
-        <TableCell><abbr title="Round Trip Time">RTT</abbr></TableCell>
+        <TableRow>
+          <TableCell>URL</TableCell>
+          <TableCell>Capabilities</TableCell>
+          <TableCell><abbr title="Round Trip Time">RTT</abbr></TableCell>
+        </TableRow>
       </TableHead>
       <TableBody>
       { requestItems }
